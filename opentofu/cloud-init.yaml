@@ -1,4 +1,7 @@
 #cloud-config
+
+timezone: Europe/Paris
+
 hostname: ${hostname}
 fdqn: ${hostname}.localdomain
 prefer_fqdn_over_hostname: false
@@ -17,10 +20,20 @@ users:
     ssh_authorized_keys:
       - ${ssh_public_key}
 
+chpasswd:
+  expire: false
+  users:
+    - name: user01
+      password: ${hashed_passwd}
+
+# Default: false
+package_update: true
+
 packages:
-- python3-libdnf5
-- vim
-- firewalld
+  - qemu-guest-agent
+  - python3-libdnf5
+  - vim
+  - firewalld
 
 yum_repos:
   kubernetes:
@@ -31,7 +44,22 @@ yum_repos:
     enabled: true
 yum_repo_dir: /etc/yum.repos.d/
 
-chpasswd:
-  expire: false
-  users:
-  - {name: user01, password: ${hashed_passwd}}
+# test of writing content
+write_files:
+  - content: |
+      The quick brown fox jumped
+      over the lazy dog
+    path: /root/test.txt
+
+bootcmd:
+  - [sh, -c, "echo $(date) | sudo tee -a /root/bootcmd.log"]
+# run once for setup
+
+runcmd:
+  - sudo systemctl daemon-reload
+  - sudo systemctl enable qemu-guest-agent.service
+  - sudo systemctl start qemu-guest-agent.service
+  - localectl set-keymap fr
+  - localectl set-locale LANG=fr_FR.UTF8
+# written to /var/log/cloud-init-output.log
+final_message: "The system is finally up, after $UPTIME seconds"

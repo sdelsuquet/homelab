@@ -1,5 +1,15 @@
-resource "libvirt_domain" "vms" {
-  for_each  = local.vms
+resource "libvirt_network" "homelab_network" {
+  name      = "homelab_network"
+  addresses = ["10.47.0.0/24"]
+  mode      = "nat"
+  autostart = "true"
+  dhcp {
+    enabled = true
+  }
+}
+
+resource "libvirt_domain" "homelab" {
+  for_each  = local.homelab
   name      = each.key
   memory    = each.value.memory
   vcpu      = each.value.vcpu

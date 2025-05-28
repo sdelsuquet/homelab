@@ -4,3 +4,6 @@
 *vault*
 *secrets
 *.passwd
+*.bak
+.venv
+scripts/old

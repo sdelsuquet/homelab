@@ -1,3 +1,3 @@
 locals {
-  vms = var.vm_definitions
+  homelab = var.vm_definitions
 }

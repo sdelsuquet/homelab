@@ -1,0 +1,148 @@
+---
+
+- name: Setup libvirtd
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  vars:
+    
+    common_timezone: "Europe/Paris" # Default timezone
+    debian_packages_install_libvirtd:
+        - qemu 
+        - qemu-kvm 
+        - qemu-system 
+        - qemu-utils
+        - libvirt-clients
+        - libvirt-daemon-system
+        - virtinst
+        - virt-manager
+
+  tasks:
+      
+    - name: System details
+      debug:
+        msg: "{{ ansible_facts['lsb']['release'] }}"
+
+    - name: System details
+      debug: msg="{{ item }}"
+      with_items: 
+      - "{{ ansible_distribution }}"
+      - "{{ ansible_distribution_version }}"
+      - "{{ ansible_distribution_major_version }}"
+
+    - name: "libvirtd - Check if hardware virtualization is enabled"
+      lineinfile:
+        path: /proc/cpuinfo
+        # The String to Search
+        regexp: "vmx|svm" 
+        state: present
+      check_mode: yes
+      register: presence
+      failed_when: presence is changed 
+
+    - name: "libvirtd - Debug message if hardware virtualization is enabled"
+      debug:
+        msg: "hardware virtualization is enabled"
+      when: presence is not changed
+
+    # do an "apt-get update", to ensure latest package lists
+    - name: "apt update"
+      apt:
+        update-cache: yes
+        cache_valid_time: 3600
+      changed_when: true
+
+    - name: "libvirtd - Install needed packages"
+      package:
+        name: "{{ debian_packages_install_libvirtd }}"
+        state: present
+      register: packageinstall
+      when:
+        - debian_packages_install_libvirtd is defined
+        - ansible_os_family == 'Debian'
+      changed_when: true
+      
+    - name: "libvirtd - Validate the packages installation"
+      debug:
+        msg: "Installation of packages is Successfull"
+      when: packageinstall is changed
+
+    - name: "Check service libvirtd and ensure it is not masked"
+      ansible.builtin.systemd:
+        name: libvirtd.service
+        enabled: true
+        masked: no
+        state: started
+      register: checklibvirtd
+
+    - name : "libvirtd - Debug message status service libvirtd"
+      debug:
+        msg: "Service libvirt check is ok"
+      when: checklibvirtd is changed
+
+    - name: "Get the non root remote user"
+      set_fact:
+        remote_regular_user: "{{ ansible_env.SUDO_USER or ansible_user_id }}"
+
+    - name: "Add the user {{ remote_regular_user }}  appending the group 'kvm', 'libvirt' and 'libvirt-qemu' to the user's groups"
+      ansible.builtin.user:
+        name: "{{ remote_regular_user }}"
+        groups: "{{ item }}"
+      with_items:
+        - kvm
+        - libvirt
+      #-  libvirt-qemu
+      append: yes
+      # when: 'not only_verify_user|bool'
+      # changed_when: false
+      # changed_when: true
+      register: add_to_group_result
+
+    - name: reset ssh connection
+      ansible.builtin.meta: reset_connection
+      when: add_to_group_result.changed == true
+
+# I used the meta: reset_connection, but it not work for me.
+# So I use the su -c comamnd, I test it works:
+# - name: perform docker login for ansible_ssh_user
+#   shell: |
+#     su -c ' docker login xxx:5000 -u xxxx -p xxxxx ' {{ ansible_ssh_user }}
+#   # become: yes
+#   # become_user: "{{ ansible_ssh_user }}"
+#   when: 
+#     # if use ansible_connection=local, the var ansible_ssh_user will not defined
+#     - ansible_connection != 'local'
+#     - ansible_ssh_user is defined
+#     - ansible_ssh_user != 'root'
+
+
+    # - name: "Verifies user's effective group allows to run libvirt/kvm without being root"
+    #   shell: groups | grep {{ item }}
+    #   with_items:
+    #     - libvirt
+    # #     - kvm
+    # #     - libvirt-qemu
+    #   loop_control:
+    #     label: "Verifying if user's current effective groups includes {{ item }}"
+    #   register: group_check
+    #   failed_when: False
+    #   ignore_errors: true
+    #   when: 'only_verify_user|bool'
+
+    # - name: "Inform if user must log out and back in to use libvirt as a regular user"
+    #   debug:
+    #     msg: "{{ group_check }}"
+
+    # - name: "Inform if user must log out and back in to use libvirt as a regular user"
+    #   register: user_groups_ready
+    #   debug:
+    #     msg: "User group settings are not in effect, you must log out and back in to make group {{ item.item }} be part of your effective group"
+    #   failed_when: item.rc is undefined or item.rc != 0
+    #   when:
+    #     - 'only_verify_user|bool'
+    #     - 'item.rc != 0'
+    #   loop: "{{ group_check.results }}"
+    #   loop_control:
+    #     label: "Ensure if user's current effective groups includes {{ item.item }}"

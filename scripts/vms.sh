@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 delete_volumes() {
     volumes=$(virsh vol-list default | awk 'NR > 2 {print $1}')
@@ -33,21 +33,21 @@ start_vms() {
 }
 
 help() {
-    echo -e "Usage: $0 [COMMAND]"
+    echo "Usage: $0 [COMMAND]"
     echo "Commands:"
     echo "  start          Start the virtual machines"
     echo "  stop           Shutdown the virtual machines"
     echo "  delete         Delete the virtual machines with their associated volumes"
-    echo -e "  help           Show this help message\n"
+    echo "  help           Show this help message\n"
     echo "Options:"
-    echo -e "  -h, --help   Show this help message\n"
+    echo "  -h, --help   Show this help message\n"
     echo "Examples:"
     echo "  $0 start"
     echo "  $0 help"
 }
 
 if [ "$#" -eq 0 ]; then
-    echo -e "No arguments supplied\n"
+    echo "No arguments supplied\n"
     help
     exit 1
 fi
@@ -57,7 +57,7 @@ case "$1" in
     delete) delete_vms;;
     -h|--help|help) help;;
     *)
-        echo -e "Invalid argument: $1\n"
+        echo "Invalid argument: $1\n"
         help
         exit 1
         ;;

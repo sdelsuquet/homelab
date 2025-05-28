@@ -1,0 +1,25 @@
+# Note: this requirements.txt file is used to specify what dependencies are
+# needed to make the package run rather than for deployment of a tested set of
+# packages.  Thus, this should be the loosest set possible (only required
+# packages, not optional ones, and with the widest range of versions that could
+# be suitable)
+ansible<7.0.0
+ansible-core>=2.13,<2.14.0
+ansible-lint<6.0.0
+jinja2==3.0.0
+PyYAML >= 5.1  # PyYAML 5.1 is required for Python 3.8+ support
+#cryptography
+cryptography==3.4.8
+packaging
+# NOTE: resolvelib 0.x version bumps should be considered major/breaking
+# NOTE: and we should update the upper cap with care, at least until 1.0
+# NOTE: Ref: https://github.com/sarugaku/resolvelib/issues/69
+# NOTE: When updating the upper bound, also update the latest version used
+# NOTE: in the ansible-galaxy-collection test suite.
+resolvelib >= 0.5.3, < 0.9.0  # dependency resolver used by ansible-galaxy
+netaddr==0.7.19
+pbr==5.4.4
+jmespath==0.9.5
+ruamel.yaml==0.16.10
+ruamel.yaml.clib==0.2.6
+MarkupSafe==2.0.0

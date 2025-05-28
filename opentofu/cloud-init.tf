@@ -1,5 +1,5 @@
 data "template_file" "user_data" {
-  for_each = local.vms
+  for_each = local.homelab
   template = file("${path.module}/cloud-init.yaml")
 
   vars = {
@@ -10,7 +10,7 @@ data "template_file" "user_data" {
 }
 
 resource "libvirt_cloudinit_disk" "cloudinit" {
-  for_each  = local.vms
+  for_each  = local.homelab
   name      = "${each.key}-cloudinit.iso"
   pool      = "default"
   user_data = data.template_file.user_data[each.key].rendered
